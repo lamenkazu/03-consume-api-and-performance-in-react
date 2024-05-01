@@ -32,12 +32,19 @@ export const Container = styled.form`
     border: 1px solid ${({ theme }) => theme["green-300"]};
     color: ${({ theme }) => theme["green-300"]};
 
-    &:hover {
+    cursor: pointer;
+
+    &:not(:disabled):hover {
       background-color: ${({ theme }) => theme["green-500"]};
       border-color: ${({ theme }) => theme["green-500"]};
       color: ${({ theme }) => theme["white"]};
 
       transition: background-color 5ms, color 5ms, border-color 5ms;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
   }
 `;
