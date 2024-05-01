@@ -1,6 +1,11 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
 import { jsonServerApi } from "../lib/axios";
 
+export const TransactionsContext = createContext({} as TransactionContextType);
+interface TransactionsProviderProps {
+  children: ReactNode;
+}
+
 interface Transaction {
   id: number;
   description: string;
@@ -10,15 +15,17 @@ interface Transaction {
   createdAt: string;
 }
 
+interface CreateTransactionInput {
+  description: string;
+  price: number;
+  category: string;
+  type: "income" | "outcome";
+}
+
 interface TransactionContextType {
   transactions: Transaction[];
   fetchTransactions: (query: string) => Promise<void>;
-}
-
-export const TransactionsContext = createContext({} as TransactionContextType);
-
-interface TransactionsProviderProps {
-  children: ReactNode;
+  createTransaction: (data: CreateTransactionInput) => Promise<void>;
 }
 
 export const TransactionsProvider = ({
@@ -26,9 +33,24 @@ export const TransactionsProvider = ({
 }: TransactionsProviderProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
+  const createTransaction = async (data: CreateTransactionInput) => {
+    const { category, description, price, type } = data;
+    const response = await jsonServerApi.post("/transactions", {
+      description,
+      price,
+      category,
+      type,
+      createdAt: new Date(),
+    });
+
+    setTransactions((prevState) => [response.data, ...prevState]);
+  };
+
   const fetchTransactions = async (query?: string) => {
     const response = await jsonServerApi.get("/transactions", {
       params: {
+        _sort: "createdAt",
+        _order: "desc",
         q: query,
       },
     });
@@ -45,6 +67,7 @@ export const TransactionsProvider = ({
       value={{
         transactions,
         fetchTransactions,
+        createTransaction,
       }}
     >
       {children}
