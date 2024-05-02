@@ -1,5 +1,6 @@
-import { createContext, ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { jsonServerApi } from "../lib/axios";
+import { createContext } from "use-context-selector";
 
 export const TransactionsContext = createContext({} as TransactionContextType);
 interface TransactionsProviderProps {
@@ -33,20 +34,23 @@ export const TransactionsProvider = ({
 }: TransactionsProviderProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  const createTransaction = async (data: CreateTransactionInput) => {
-    const { category, description, price, type } = data;
-    const response = await jsonServerApi.post("/transactions", {
-      description,
-      price,
-      category,
-      type,
-      createdAt: new Date(),
-    });
+  const createTransaction = useCallback(
+    async (data: CreateTransactionInput) => {
+      const { category, description, price, type } = data;
+      const response = await jsonServerApi.post("/transactions", {
+        description,
+        price,
+        category,
+        type,
+        createdAt: new Date(),
+      });
 
-    setTransactions((prevState) => [response.data, ...prevState]);
-  };
+      setTransactions((prevState) => [response.data, ...prevState]);
+    },
+    []
+  );
 
-  const fetchTransactions = async (query?: string) => {
+  const fetchTransactions = useCallback(async (query?: string) => {
     const response = await jsonServerApi.get("/transactions", {
       params: {
         _sort: "createdAt",
@@ -56,20 +60,23 @@ export const TransactionsProvider = ({
     });
 
     setTransactions(response.data);
-  };
+  }, []);
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [fetchTransactions]);
+
+  const contextValues = useMemo(
+    () => ({
+      transactions,
+      fetchTransactions,
+      createTransaction,
+    }),
+    [createTransaction, fetchTransactions, transactions]
+  );
 
   return (
-    <TransactionsContext.Provider
-      value={{
-        transactions,
-        fetchTransactions,
-        createTransaction,
-      }}
-    >
+    <TransactionsContext.Provider value={contextValues}>
       {children}
     </TransactionsContext.Provider>
   );
